@@ -1,3 +1,4 @@
+const fs = require('fs');
 const axios = require('axios');
 const cheerio = require('cheerio');
 
@@ -100,13 +101,35 @@ class Scraper {
     async getTotalAdsCount() {
         // iterate over the pages and fetch items
         while (await this.getNextPageUrl()) {
+            // what to do for each page
             this.addItems();
+            // this.scrapeTruckItem();
         }
         console.log(`${this.allItemIds.length} items in total`);
     }
 
     // function that scrapes the actual ads and parses into the format: item id, title, price, registration date, production date, mileage, power
-    scrapeTruckItem() {}
+    scrapeTruckItem() {
+        const pageItems = this._$(this.itemSpecifier);
+        console.log(`${pageItems.length} items fetched`);
+        // reset pageItems to empty array
+        this.pageItems = [];
+        pageItems.each((_, el) => {
+            const obj = {};
+            obj.id = this._$(el).attr('id');
+            let span = this._$('span[data-testid="financing-widget"]', el)[0];
+            obj.title = span.attribs['data-title'];
+            obj.price = span.attribs['data-price'];
+            obj.production_year = this._$('div div ul li', el)?.prop(
+                'innerText'
+            );
+            obj.mileage = this._$('div div ul li', el)
+                ?.nextAll()
+                ?.prop('innerText');
+            this.pageItemIds.push(obj);
+            this.allItemIds.push(obj);
+        });
+    }
 }
 
 const scraper = new Scraper(configObj);
